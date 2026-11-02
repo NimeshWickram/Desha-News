@@ -1,0 +1,4 @@
+import {runtimeEnv} from './runtime-env.mjs';
+import {firebaseAccessToken} from '../worker/services.mjs';
+const env=runtimeEnv();
+try{const token=await firebaseAccessToken(env,'https://www.googleapis.com/auth/cloud-platform');const r=await fetch(`https://cloudresourcemanager.googleapis.com/v1/projects/${env.FIREBASE_PROJECT_ID}:getIamPolicy`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(15000)});if(!r.ok){console.log(`Owner-account lookup unavailable (${r.status}). No permissions changed.`);process.exitCode=1}else{const data=await r.json();const owners=(data.bindings||[]).filter(b=>b.role==='roles/owner').flatMap(b=>b.members||[]).filter(v=>v.startsWith('user:')).map(v=>v.slice(5));console.log(JSON.stringify({project:env.FIREBASE_PROJECT_ID,ownerAccounts:owners}));}}catch(e){console.error('Project access check failed:',e.message);process.exitCode=1}

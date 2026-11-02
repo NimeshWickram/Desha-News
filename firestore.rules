@@ -1,0 +1,8 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Access goes through the authenticated server API, using service-account IAM.
+    // Never enable public client writes to make an admin login work.
+    match /{document=**} { allow read, write: if false; }
+  }
+}

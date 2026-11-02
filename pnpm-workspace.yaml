@@ -3,3 +3,5 @@ packages:
 networkConcurrency: 4
 fetchRetries: 3
 fetchTimeout: 600000
+allowBuilds:
+  esbuild: true

@@ -1,38 +1,71 @@
 # Desha News
 
-A Sinhala-first, responsive news publication built with **Next.js App Router, TypeScript, and React**. The red, ivory, and gold identity follows the supplied Desha News logo.
+Next.js App Router + React + TypeScript news publication, with Sinhala/English editions, a protected editorial dashboard, Firebase Firestore storage and signed Cloudinary image uploads.
 
-## Development
+## Run locally
 
-Requires Node.js 20.9+ and pnpm.
+Use Node.js 24 and pnpm. Install with `pnpm install`, then build once with `pnpm build` and run `pnpm dev`.
 
-```sh
-pnpm install
-pnpm dev
-```
+- Homepage: http://127.0.0.1:3000
+- Admin: http://127.0.0.1:3001/admin/
+- Both ports share the same Firebase project. The internal Next.js development server uses port 3100. Changes to React/CSS update automatically; restart development after changing server integration files or environment variables.
+- `pnpm start` runs the compiled site on port 3000; `pnpm admin` runs it on port 3001.
+- `pnpm demo` runs a separate, explicitly local demo on port 3002. Its SQLite database and local media live under ignored `.sites-runtime/preview`; it does not connect to Firebase or Cloudinary. Development sign-in is disabled in Firebase mode.
 
-Open http://localhost:3000. `pnpm build` creates a static production website in `out/`, suitable for static hosting. `pnpm typecheck` checks TypeScript.
+## Firebase and Cloudinary setup
 
-## Included
+1. Copy `.env.example` to `.env.local` and configure the variables. Existing credentials are already stored locally in ignored files; never commit them.
+2. In Firebase project `desha-news`, enable Cloud Firestore and create the `(default)` database. Use production rules. Apply `firestore.rules`, which denies direct client access: this application's server uses service-account IAM and enforces editorial permissions itself.
+3. Store the service-account JSON at `.secrets/firebase-service-account.json`. On hosting, provide `FIREBASE_CLIENT_EMAIL` and `FIREBASE_PRIVATE_KEY` through server secret settings instead of a local file. Do not use `NEXT_PUBLIC_` for secrets.
+4. Enable Firebase Authentication → Email/Password and create the editorial account. Set `ADMIN_EMAILS`, then run `node scripts/configure-admin.mjs` to pin the existing user's UID in the local allowlist. This command does not create users or change passwords. Hosted `FIREBASE_ADMIN_UIDS` must contain the same confirmed UID. Verified email accounts in `ADMIN_EMAILS` can also sign in.
+5. Set the Cloudinary cloud name, API key and API secret. Signed server uploads accept JPG/PNG/WebP up to 8 MB. The library lists images under `desha-news/`.
+6. Run `node scripts/check-services.mjs` to verify read access. Restart development after environment changes.
 
-- Responsive homepage, category navigation, Sinhala text search, manually navigable headline ticker.
-- Eight individually addressable article pages with metadata and related stories.
-- Bookmarks persisted in this browser's localStorage, and a copy-link sharing button.
-- Mobile navigation, accessible control labels, keyboard focus styles, reduced motion support, and a 404 page.
-- Original user-provided logo in `public/images/desha-logo.jpeg`.
+Firebase login uses an HttpOnly, SameSite session cookie (Secure on HTTPS) lasting about one hour. Sign in again when it expires; there is no hidden local-preview bypass in Firebase mode. The hosted Sites identity option remains available only when explicitly configured for that platform.
 
-## Content and launch
+Private keys previously shared in chat should be rotated before launch. Replace local and hosting secrets, then revoke the old keys in the provider consoles.
 
-Edit articles in `src/lib/articles.ts`. These are clearly labeled **sample articles**, not a live news feed. The date displayed on the preview is 12 October 2026. Replace sample text and dates with verified editorial content before a public launch.
+## Editorial workflow
 
-This is a frontend/static publication; there is no admin panel, CMS, authentication, newsletter backend, or Facebook integration. The user's 11K audience is represented without inventing a Facebook page URL. Add the confirmed official URL to the community area when available. Preview robots metadata is set to noindex; change it when real content is ready.
+Create a story, write Sinhala and/or English text, add an image description, and save a draft. Preview before publishing. Draft and trash records are never returned by the public API. The API rejects stale saves and duplicate URL slugs. Images upload to Cloudinary; article records and settings persist in Firestore. Only an edition with a title is shown in that language's feed.
 
-## Images
+Settings include the publication taglines, **public contact email**, and **official Facebook page URL**. These are deliberately blank until supplied; the administrator's login address is not automatically published as the contact address. Remember to replace the Facebook placeholder.
 
-The logo is supplied by the user. Preview photography sources:
+The About, Contact, Privacy, Terms and Editorial Policy pages are available in both languages. Review their wording against your actual publishing practices before launch. Sample articles are only seeded in local demo mode, not in Firestore.
 
-- Ella: https://www.lankavillas.com/dutch-house-bandarawela/experiences/nine-arches-bridge.html
-- Colombo: https://www.goway.com/destinations/indian-ocean/sri-lanka/places/colombo
-- Remaining illustrative photos: Unsplash images photo-1540747913346-19e32dc3e97e, photo-1518770660439-4636190af475, photo-1472396961693-142e6e269027, photo-1503676260728-1c00da094a0b, photo-1486406146926-c627a92ad1ab.
+## Public hosting and SEO
 
-Use owned or licensed editorial images for public launch. Noto Sans Sinhala and Manrope are loaded through Google Fonts, with system fallbacks.
+`pnpm build` creates Next.js assets in `out/` and packages them with the server API as a Worker module in `dist/server/index.js`. Uploading `out/` alone is insufficient: it does not contain the Firebase/Cloudinary API. The existing Sites identity is retained in `.openai/hosting.json`; D1/R2 are not used in production.
+
+For public launch, use HTTPS, configure the real canonical `SITE_URL`, and set `PUBLIC_SITE=true` only after the host's access controls are also public. Runtime robots and sitemap routes keep private/local previews non-indexable. Article responses include current titles, descriptions, canonical links and NewsArticle metadata. Sitemap entries include published, non-sample articles with distinct `lang=si` and `lang=en` URLs. Article bodies are fetched by the React application; social metadata is generated by the server. Unknown/unpublished article URLs return 404, while storage failures return 503.
+
+## AdSense preparation — reviewed 29 October 2026
+
+**Sinhala is not currently a supported AdSense content language; English is supported.** A language selector does not make Sinhala content eligible. Do not put Google ad code on pages whose primary content is Sinhala. Develop a substantive, original English edition and recheck Google's policy before applying. Approval remains Google's decision.
+
+- Publish useful original reporting/blogs, with credited sources and owned/licensed images. Remove demo content. There is no promised article-count threshold or approval guarantee in this project.
+- Complete contact and publisher information; review all policy pages.
+- Make the real site publicly reachable over HTTPS and accessible to Google's crawlers.
+- Verify domain ownership in Search Console and submit the sitemap.
+- Only put your real `pub-` publisher ID in `ADSENSE_PUBLISHER_ID`. The runtime then serves an `ads.txt` entry; otherwise that route returns 404. This does not activate advertisements.
+- AdSense and Analytics scripts are intentionally inactive. Before activation, implement the actual ad configuration, update privacy disclosures and set up the applicable Google-certified consent-management solution, including relevant EEA/UK/Switzerland requirements. A generic cookie banner is not a substitute.
+- The admin checklist tracks preparation items; it is not an AdSense certification.
+
+Official references:
+
+- [Supported languages](https://support.google.com/adsense/answer/9727?hl=en)
+- [Site readiness](https://support.google.com/adsense/answer/12176698?hl=en)
+- [Consent requirements](https://support.google.com/adsense/answer/13554116?hl=en)
+- [Publisher policies](https://support.google.com/adsense/answer/10502938?hl=en)
+
+## Verification
+
+- `pnpm build` / `pnpm typecheck`
+- `node scripts/verify-services.mjs`: mocked Firestore concurrency/slug reservations, Firebase authorisation, cookie flags, Cloudinary signatures and SEO routes.
+- `node scripts/verify-firestore-live.mjs`: creates an unpublished test draft, checks persistence/conflicts and removes only that draft and its reserved slug. Never publishes test content.
+- `node scripts/check-bundle-secrets.mjs`: checks generated assets for configured server secrets.
+- `node scripts/verify-admin.cjs`: browser workflow tests against an isolated demo on port 3002. Requires Playwright and Chrome; set `DESHA_PLAYWRIGHT_PATH` if it is outside this project's dependencies.
+
+## Demo image credits
+
+The logo was supplied by the user. Demo photographs include the Nine Arches Bridge image from lankavillas.com, Colombo from goway.com, and illustrative Unsplash images. Replace third-party demo images with assets you own or have licensed for publication. Google Fonts supplies Manrope and Noto Sans Sinhala with system fallbacks.

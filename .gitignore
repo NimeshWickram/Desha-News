@@ -1,7 +1,11 @@
 node_modules/
 .next/
 out/
+dist/
 .sites-runtime/
 *.tsbuildinfo
 .env*
 !.env.example
+.secrets/
+firebase-service-account*.json
+*-firebase-adminsdk-*.json

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@11.25.0",
-  "scripts": { "dev": "next dev --hostname 0.0.0.0", "build": "next build", "start": "next start", "typecheck": "tsc --noEmit" },
+  "scripts": { "dev": "node scripts/develop.mjs", "build": "next build && node scripts/build-worker.mjs", "start": "node scripts/preview.mjs", "admin": "node scripts/preview.mjs --port 3001", "demo": "node scripts/preview.mjs --demo --port 3002", "check:services": "node scripts/check-services.mjs", "typecheck": "tsc --noEmit", "db:generate": "drizzle-kit generate" },
   "dependencies": { "next": "^16.0.0", "react": "^19.0.0", "react-dom": "^19.0.0", "lucide-react": "^0.468.0" },
-  "devDependencies": { "typescript": "^5.0.0", "@types/node": "^22.0.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0" }
+  "devDependencies": { "typescript": "^5.0.0", "@types/node": "^22.0.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "drizzle-kit": "0.31.10", "drizzle-orm": "0.45.2" }
 }
