@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+
+# Google AdSense Crawler
+User-agent: Mediapartners-Google
+Allow: /
+
+Sitemap: https://desha-news.vercel.app/sitemap.xml

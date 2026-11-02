@@ -1,0 +1,3 @@
+# Google AdSense authorized digital sellers for Desha News
+# Replace pub-0000000000000000 with your approved 16-digit AdSense Publisher ID
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
