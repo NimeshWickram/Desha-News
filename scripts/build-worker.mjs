@@ -8,6 +8,10 @@ const seedPosts=articles.map((a,i)=>({id:a.slug,slug:a.slug,category:a.category,
 const settings={facebookUrl:'',contactEmail:'',taglineSi:'ඔබේ හඬ. ඔබේ පුවත්.',taglineEn:'Your voice. Your news.'};
 const types={'.html':'text/html; charset=utf-8','.js':'application/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.txt':'text/plain; charset=utf-8','.svg':'image/svg+xml','.jpeg':'image/jpeg','.jpg':'image/jpeg','.webp':'image/webp','.png':'image/png','.ico':'image/x-icon','.woff2':'font/woff2'};
 const assets={};function walk(dir,base=''){for(const item of readdirSync(dir,{withFileTypes:true})){const rel=`${base}/${item.name}`,path=join(dir,item.name);if(item.isDirectory())walk(path,rel);else if(!rel.endsWith('.map')&&!rel.endsWith('.jpg'))assets[rel]={type:types[extname(path)]||'application/octet-stream',data:readFileSync(path).toString('base64')};}}
+if (!existsSync('out')) {
+  console.log('Static export directory "out" not found; skipping worker bundling.');
+  process.exit(0);
+}
 walk(resolve('out'));
 const services=readFileSync('worker/services.mjs','utf8')+'\n'+readFileSync('worker/seo.mjs','utf8');const api=readFileSync('worker/api.mjs','utf8').replace(/^import .*from '\.\/services.mjs';\r?\n/m,'');const entry=readFileSync('worker/index.mjs','utf8').replace(/^import .*;\r?\n/gm,'');
 mkdirSync('dist/server',{recursive:true});mkdirSync('dist/.openai',{recursive:true});

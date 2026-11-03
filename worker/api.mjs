@@ -22,11 +22,16 @@ export function createApi(seedPosts, defaultSettings) {
   return post;
  }
  return async function api(request,env){
-  const url=new URL(request.url);const path=url.pathname.replace(/\/$/,'');
+  const forwardedHost=request.headers.get('x-forwarded-host');
+  const forwardedProto=request.headers.get('x-forwarded-proto');
+  const url=new URL(request.url);
+  if(forwardedHost){url.host=forwardedHost;if(forwardedProto)url.protocol=forwardedProto.endsWith(':')?forwardedProto:`${forwardedProto}:`;}
+  const isSameOrigin=req=>{const orig=req.headers.get('Origin');if(!orig)return true;try{return orig===url.origin||new URL(orig).host===url.host;}catch{return false;}};
+  const path=url.pathname.replace(/\/$/,'');
   try{
    if(path==='/api/session'){const user=await editorIdentity(request,env);return json({signedIn:!!user.id,isAdmin:user.isAdmin,email:user.isAdmin?user.email:'',configured:!!env.ADMIN_EMAILS,local:env.PREVIEW_MODE==='local',authProvider:env.AUTH_PROVIDER||'sites',storage:env.CONTENT_PROVIDER==='firebase'?'firebase':'demo',firebaseReady:firestoreReady(env),cloudinaryReady:cloudinaryReady(env)})}
    if(path==='/api/auth/login'||path==='/api/auth/logout'){
-    if(request.method!=='POST'||request.headers.get('Origin')!==url.origin||request.headers.get('X-Desha-Request')!=='1')fail('Request origin could not be verified.',403);
+    if(request.method!=='POST'||!isSameOrigin(request)||request.headers.get('X-Desha-Request')!=='1')fail('Request origin could not be verified.',403);
     if(path.endsWith('/login'))return await firebaseLogin(request,env);
     return Response.json({success:true},{headers:{'Cache-Control':'no-store','Set-Cookie':`desha_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${url.protocol==='https:'?'; Secure':''}`}});
    }
@@ -36,7 +41,7 @@ export function createApi(seedPosts, defaultSettings) {
    if(!path.startsWith('/api/admin/'))return json({error:'Not found'},404);
    const user=await editorIdentity(request,env);if(!user.id)fail('Sign in to continue.',401);if(!user.isAdmin)fail('This account does not have editorial access.',403);
    if(!['GET','HEAD'].includes(request.method)){
-    if(request.headers.get('Origin')!==url.origin||request.headers.get('X-Desha-Request')!=='1')fail('Request origin could not be verified.',403);
+    if(!isSameOrigin(request)||request.headers.get('X-Desha-Request')!=='1')fail('Request origin could not be verified.',403);
     if(path!=='/api/admin/media'&&!request.headers.get('Content-Type')?.includes('application/json'))fail('Expected a JSON request.',415);
     if(Number(request.headers.get('Content-Length')||0)>9*1024*1024)fail('Request is too large.',413);
    }
